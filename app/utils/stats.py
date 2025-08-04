@@ -21,7 +21,7 @@ def check_canary_health() -> Dict[str, Any]:
         Dict containing analysis results and alert status
     """
     # Check if a canary model is active
-    if state.canary_model is None:
+    if state.canary_model() is None:
         return {
             "alert_triggered": False,
             "message": "No active canary deployment to monitor."
@@ -51,7 +51,8 @@ def check_canary_health() -> Dict[str, Any]:
     t_stat, p_value = stats.ttest_ind(canary_latencies, stable_latencies, equal_var=False)
     
     # Determine if alert should be triggered
-    alert_triggered = p_value < 0.05 and canary_avg > stable_avg
+    # Convert NumPy boolean to Python native boolean with bool()
+    alert_triggered = bool(p_value < 0.05 and canary_avg > stable_avg)
     
     # Update alert status in global state
     state.alert_status["alert_triggered"] = alert_triggered
@@ -64,11 +65,11 @@ def check_canary_health() -> Dict[str, Any]:
     
     # Return appropriate response
     return {
-        "alert_triggered": alert_triggered,
+        "alert_triggered": alert_triggered,  # Already converted to Python bool
         "p_value": round(float(p_value), 3),
         "message": message,
         "stable_avg_latency_ms": round(float(stable_avg), 1),
         "canary_avg_latency_ms": round(float(canary_avg), 1),
-        "stable_sample_count": stable_count,
-        "canary_sample_count": canary_count
+        "stable_sample_count": int(stable_count),  # Ensure count is Python int
+        "canary_sample_count": int(canary_count)   # Ensure count is Python int
     }

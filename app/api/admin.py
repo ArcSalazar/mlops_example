@@ -145,7 +145,7 @@ async def promote_canary():
         "status": "success",
         "message": "Canary promoted to stable successfully",
         "previous_stable_model": os.path.basename(previous_stable_model),
-        "new_stable_model": os.path.basename(state.stable_model_path)
+        "new_stable_model": os.path.basename(canary_path)
     }
 
 @router.post("/toggle-slowdown")
@@ -167,7 +167,7 @@ async def toggle_slowdown():
     
     # Return the updated state
     return {
-        "simulate_slowdown": state.simulate_slowdown,
+        "simulate_slowdown": bool(state.simulate_slowdown),  # Ensure it's a Python bool
         "message": message
     }
 

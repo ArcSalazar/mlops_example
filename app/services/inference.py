@@ -28,8 +28,8 @@ def route_prediction(features: List[float]) -> Dict[str, Any]:
     request_id = f"req_{int(time.time() * 1000)}"
     logger.info(f"[{request_id}] Processing prediction request with {len(features)} features")
     
-    # Determine which model to use (10% to canary if available)
-    use_canary = state.canary_model() is not None and random.random() < 0.1
+    # Determine which model to use (20% to canary if available)
+    use_canary = state.canary_model() is not None and random.random() < 0.2
     model = state.canary_model() if use_canary else state.stable_model()
     model_name = "canary" if use_canary else "stable"
     
