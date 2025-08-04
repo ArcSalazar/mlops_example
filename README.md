@@ -1,4 +1,4 @@
-# MLOps Take-Home Project: Canary Deployment of a New Model with Statistical Performance Monitoring
+# MLOps Project: Canary Deployment of a New Model with Statistical Performance Monitoring
 
 ## Objective
 
