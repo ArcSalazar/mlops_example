@@ -40,8 +40,8 @@ accuracy_v1 = model_v1.score(X_test, y_test)
 print(f"Model v1 accuracy: {accuracy_v1:.4f}")
 
 # Save model_v1
-joblib.dump(model_v1, '..\\models\\model_v1.joblib')
-print("Model v1 saved as ..\\models\\model_v1.joblib")
+joblib.dump(model_v1, 'models/model_v1.joblib')
+print("Model v1 saved as models/model_v1.joblib")
 
 # Generate new data with different random state for model_v2
 X_v2, y_v2 = make_classification(
@@ -69,7 +69,7 @@ accuracy_v2 = model_v2.score(X_test_v2, y_test_v2)
 print(f"Model v2 accuracy: {accuracy_v2:.4f}")
 
 # Save model_v2
-joblib.dump(model_v2, '..\\models\\model_v2.joblib')
-print("Model v2 saved as ..\\models\\model_v2.joblib")
+joblib.dump(model_v2, 'models/model_v2.joblib')
+print("Model v2 saved as models/model_v2.joblib")
 
 print("Training complete. Both models have been saved.")

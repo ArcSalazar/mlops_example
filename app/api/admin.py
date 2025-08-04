@@ -46,15 +46,17 @@ async def deploy_canary(request: CanaryDeployRequest):
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Failed to load model: {str(e)}")
     
-    # Update canary-related variables
-    state.canary_start_time = datetime.datetime.now().isoformat()
+    # Update canary-related variables with thread-safe access
+    with state.state_lock:
+        state.canary_start_time = datetime.datetime.now().isoformat()
+        state.alert_status = {}
     
-    # Reset metrics and alert status
-    state.canary_metrics = {
-        "stable": {"latencies_ms": []},
-        "canary": {"latencies_ms": []}
-    }
-    state.alert_status = {}
+    # Reset metrics with thread-safe access
+    with state.metrics_lock:
+        state.canary_metrics = {
+            "stable": {"latencies_ms": []},
+            "canary": {"latencies_ms": []}
+        }
     
     # Return success response
     return {
@@ -81,14 +83,18 @@ async def rollback_canary():
             "message": "No active canary to rollback"
         }
     
-    # Reset all canary-related state
+    # Reset all canary-related state with thread-safe access
     state.model_manager.canary_model_path = None
-    state.canary_start_time = None
-    state.canary_metrics = {
-        "stable": {"latencies_ms": []},
-        "canary": {"latencies_ms": []}
-    }
-    state.alert_status = {}
+    
+    with state.state_lock:
+        state.canary_start_time = None
+        state.alert_status = {}
+        
+    with state.metrics_lock:
+        state.canary_metrics = {
+            "stable": {"latencies_ms": []},
+            "canary": {"latencies_ms": []}
+        }
     
     # Return success response
     return {
@@ -131,14 +137,18 @@ async def promote_canary():
     # This requires modifying the internal attribute since we don't have a setter for stable_model_path
     state.model_manager._stable_model_path = canary_path
     
-    # Reset canary-related state
+    # Reset canary-related state with thread-safe access
     state.model_manager.canary_model_path = None
-    state.canary_start_time = None
-    state.canary_metrics = {
-        "stable": {"latencies_ms": []},
-        "canary": {"latencies_ms": []}
-    }
-    state.alert_status = {}
+    
+    with state.state_lock:
+        state.canary_start_time = None
+        state.alert_status = {}
+        
+    with state.metrics_lock:
+        state.canary_metrics = {
+            "stable": {"latencies_ms": []},
+            "canary": {"latencies_ms": []}
+        }
     
     # Return success response
     return {
@@ -159,11 +169,14 @@ async def toggle_slowdown():
     Returns:
         Dict containing the updated slowdown status
     """
-    # Toggle the boolean value
-    state.simulate_slowdown = not state.simulate_slowdown
+    # Toggle the boolean value with thread-safe access
+    with state.state_lock:
+        state.simulate_slowdown = not state.simulate_slowdown
+        # Get the current value for the message
+        current_slowdown = state.simulate_slowdown
     
     # Prepare the response message
-    message = "Slowdown simulation enabled" if state.simulate_slowdown else "Slowdown simulation disabled"
+    message = "Slowdown simulation enabled" if current_slowdown else "Slowdown simulation disabled"
     
     # Return the updated state
     return {

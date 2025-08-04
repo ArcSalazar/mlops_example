@@ -27,9 +27,10 @@ def check_canary_health() -> Dict[str, Any]:
             "message": "No active canary deployment to monitor."
         }
     
-    # Get latency samples
-    stable_latencies = state.canary_metrics["stable"]["latencies_ms"]
-    canary_latencies = state.canary_metrics["canary"]["latencies_ms"]
+    # Get latency samples with thread-safe access
+    with state.metrics_lock:
+        stable_latencies = state.canary_metrics["stable"]["latencies_ms"].copy()
+        canary_latencies = state.canary_metrics["canary"]["latencies_ms"].copy()
     
     # Check if we have enough samples
     stable_count = len(stable_latencies)
@@ -54,8 +55,16 @@ def check_canary_health() -> Dict[str, Any]:
     # Convert NumPy boolean to Python native boolean with bool()
     alert_triggered = bool(p_value < 0.05 and canary_avg > stable_avg)
     
-    # Update alert status in global state
-    state.alert_status["alert_triggered"] = alert_triggered
+    # Update alert status in global state with thread-safe access
+    with state.state_lock:
+        state.alert_status = {
+            "alert_triggered": alert_triggered,
+            "p_value": round(float(p_value), 3),
+            "stable_avg_latency_ms": round(float(stable_avg), 1),
+            "canary_avg_latency_ms": round(float(canary_avg), 1),
+            "stable_sample_count": int(stable_count),
+            "canary_sample_count": int(canary_count)
+        }
     
     # Prepare response message
     if alert_triggered:

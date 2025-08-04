@@ -28,8 +28,10 @@ def route_prediction(features: List[float]) -> Dict[str, Any]:
     request_id = f"req_{int(time.time() * 1000)}"
     logger.info(f"[{request_id}] Processing prediction request with {len(features)} features")
     
-    # Determine which model to use (20% to canary if available)
-    use_canary = state.canary_model() is not None and random.random() < 0.2
+    # Determine which model to use (exactly 10% to canary if available)
+    # Use last digit of request_id timestamp for deterministic routing
+    timestamp = int(request_id.split('_')[1])
+    use_canary = state.canary_model() is not None and (timestamp % 10 == 0)
     model = state.canary_model() if use_canary else state.stable_model()
     model_name = "canary" if use_canary else "stable"
     
@@ -63,8 +65,9 @@ def route_prediction(features: List[float]) -> Dict[str, Any]:
     end_time = time.perf_counter()
     latency_ms = (end_time - start_time) * 1000
     
-    # Store latency in metrics
-    state.canary_metrics[model_name]["latencies_ms"].append(latency_ms)
+    # Store latency in metrics with thread-safe access
+    with state.metrics_lock:
+        state.canary_metrics[model_name]["latencies_ms"].append(latency_ms)
     
     logger.info(f"[{request_id}] Request completed: model={model_name}, latency={latency_ms}ms")
     
